@@ -2,7 +2,7 @@
     "name": "vss-krishna-portfolio",
     "version": "1.0.0",
     "private": true,
-    "homepage": "https://yourusername.github.io/portfolio",
+    "homepage": "https://avsskc1509.github.io/portfolio",
     "dependencies": {
       "@testing-library/jest-dom": "^5.16.4",
       "@testing-library/react": "^13.3.0",
