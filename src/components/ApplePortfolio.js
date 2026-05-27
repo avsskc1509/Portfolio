@@ -5,7 +5,7 @@ const ApplePortfolio = () => {
   const [scrollY, setScrollY] = useState(0);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isLoading, setIsLoading] = useState(true);
-  const [activeProject, setActiveProject] = useState(0);
+  
   const [expandedSkill, setExpandedSkill] = useState(null);
   const [expandedProject, setExpandedProject] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
