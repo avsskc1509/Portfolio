@@ -5,11 +5,11 @@ const ApplePortfolio = () => {
   const [scrollY, setScrollY] = useState(0);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isLoading, setIsLoading] = useState(true);
-  const [activeProject, setActiveProject] = useState(0);
   const [expandedSkill, setExpandedSkill] = useState(null);
   const [expandedProject, setExpandedProject] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
+  const animFrameRef = useRef(null);
+
   const heroRef = useRef(null);
   const introRef = useRef(null);
   const projectsRef = useRef(null);
@@ -20,10 +20,7 @@ const ApplePortfolio = () => {
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 2000);
     const handleMouseMove = (e) => {
-      setMousePosition({
-        x: (e.clientX / window.innerWidth) - 0.5,
-        y: (e.clientY / window.innerHeight) - 0.5
-      });
+      setMousePosition({ x: (e.clientX / window.innerWidth) - 0.5, y: (e.clientY / window.innerHeight) - 0.5 });
     };
     const handleScroll = () => {
       setScrollY(window.scrollY);
@@ -39,13 +36,162 @@ const ApplePortfolio = () => {
   }, [mobileMenuOpen]);
 
   useEffect(() => {
-    if (mobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
+    if (mobileMenuOpen) { document.body.style.overflow = 'hidden'; }
+    else { document.body.style.overflow = 'unset'; }
     return () => { document.body.style.overflow = 'unset'; };
   }, [mobileMenuOpen]);
+
+  // Canvas animation for creative talents
+  useEffect(() => {
+    if (isLoading) return;
+    let t = 0;
+
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function drawCamera(ctx, t) {
+      ctx.clearRect(0, 0, 72, 72);
+      ctx.strokeStyle = '#aaa'; ctx.lineWidth = 1.5;
+      ctx.fillStyle = 'rgba(255,255,255,0.04)';
+      roundRect(ctx, 10, 18, 52, 36, 6); ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(20, 18); ctx.lineTo(24, 12); ctx.lineTo(36, 12); ctx.lineTo(40, 18);
+      ctx.strokeStyle = '#888'; ctx.lineWidth = 1.2; ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(36, 38, 11, 0, Math.PI * 2);
+      ctx.strokeStyle = '#777'; ctx.lineWidth = 1.5; ctx.stroke();
+      const flash = Math.sin(t * 0.04) > 0.97 ? 1 : 0;
+      const aperture = flash ? 2 : 7;
+      ctx.beginPath();
+      ctx.arc(36, 38, aperture, 0, Math.PI * 2);
+      ctx.fillStyle = flash ? 'rgba(255,255,220,0.9)' : 'rgba(255,255,255,0.15)';
+      ctx.fill();
+      if (flash) {
+        ctx.beginPath(); ctx.arc(36, 38, 14, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255,255,200,0.3)'; ctx.lineWidth = 3; ctx.stroke();
+      }
+      ctx.fillStyle = '#555'; ctx.beginPath();
+      ctx.arc(56, 24, 3, 0, Math.PI * 2); ctx.fill();
+    }
+
+    function drawVideo(ctx, t) {
+      ctx.clearRect(0, 0, 72, 72);
+      ctx.fillStyle = 'rgba(255,255,255,0.04)';
+      ctx.strokeStyle = '#888'; ctx.lineWidth = 1.5;
+      roundRect(ctx, 8, 22, 42, 28, 4); ctx.fill(); ctx.stroke();
+      const wave = Math.sin(t * 0.06) * 4;
+      ctx.beginPath();
+      ctx.moveTo(50, 30 + wave); ctx.lineTo(64, 24); ctx.lineTo(64, 48); ctx.lineTo(50, 42 + wave);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fill();
+      ctx.strokeStyle = '#666'; ctx.stroke();
+      const progress = (t % 120) / 120;
+      ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fillRect(12, 26, 34, 20);
+      ctx.fillStyle = 'rgba(99,180,255,0.5)'; ctx.fillRect(12, 26, 34 * progress, 20);
+      ctx.fillStyle = '#fff'; ctx.font = '8px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('● REC', 29, 39);
+    }
+
+    function drawArt(ctx, t) {
+      ctx.clearRect(0, 0, 72, 72);
+      const colors = ['#c084fc','#fb7185','#38bdf8','#34d399','#fbbf24'];
+      for (let i = 0; i < 5; i++) {
+        const angle = (i / 5) * Math.PI * 2 + t * 0.02;
+        const x = 36 + Math.cos(angle) * 22;
+        const y = 36 + Math.sin(angle) * 22;
+        const size = 8 + Math.sin(t * 0.05 + i * 1.2) * 3;
+        ctx.beginPath(); ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fillStyle = colors[i] + '99'; ctx.fill();
+      }
+      ctx.beginPath(); ctx.arc(36, 36, 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff'; ctx.fill();
+      ctx.save(); ctx.translate(36, 36); ctx.rotate(t * 0.04);
+      ctx.fillStyle = '#e2e8f0'; ctx.fillRect(-1, -22, 2, 14);
+      ctx.beginPath(); ctx.ellipse(0, -22, 4, 2, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#94a3b8'; ctx.fill();
+      ctx.restore();
+    }
+
+    function drawLeadership(ctx, t) {
+      ctx.clearRect(0, 0, 72, 72);
+      const people = [
+        { x: 36, y: 20, r: 8, color: '#a78bfa' },
+        { x: 18, y: 46, r: 6, color: '#67e8f9' },
+        { x: 36, y: 50, r: 6, color: '#86efac' },
+        { x: 54, y: 46, r: 6, color: '#fda4af' },
+      ];
+      [[0,1],[0,2],[0,3]].forEach(([a,b]) => {
+        const pa = people[a], pb = people[b];
+        const pulse = 0.4 + 0.3 * Math.sin(t * 0.08 + a);
+        ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y);
+        ctx.strokeStyle = `rgba(255,255,255,${pulse})`; ctx.lineWidth = 1; ctx.stroke();
+      });
+      people.forEach((p, i) => {
+        const bob = Math.sin(t * 0.05 + i * 0.8) * 2;
+        ctx.beginPath(); ctx.arc(p.x, p.y + bob, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = p.color + 'cc'; ctx.fill();
+        ctx.beginPath(); ctx.arc(p.x, p.y + bob, p.r * 0.55, 0, Math.PI * 2);
+        ctx.fillStyle = '#000'; ctx.fill();
+      });
+    }
+
+    function drawDJ(ctx, t) {
+      ctx.clearRect(0, 0, 72, 72);
+      const cx = 36, cy = 38;
+      ctx.beginPath(); ctx.arc(cx, cy, 22, 0, Math.PI * 2);
+      ctx.fillStyle = '#1a1a2e'; ctx.fill();
+      ctx.strokeStyle = '#444'; ctx.lineWidth = 1; ctx.stroke();
+      for (let r = 8; r <= 20; r += 3) {
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.strokeStyle = '#333'; ctx.lineWidth = 0.5; ctx.stroke();
+      }
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(t * 0.04);
+      ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(18, 0); ctx.stroke();
+      ctx.beginPath(); ctx.arc(18, 0, 2, 0, Math.PI * 2);
+      ctx.fillStyle = '#c4b5fd'; ctx.fill();
+      ctx.restore();
+      ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff'; ctx.fill();
+      for (let i = 0; i < 5; i++) {
+        const h = 4 + Math.abs(Math.sin(t * 0.15 + i * 0.7)) * 10;
+        ctx.fillStyle = `hsl(${260 + i * 20}, 80%, 70%)`;
+        ctx.fillRect(8 + i * 6, 10 - h, 4, h);
+      }
+    }
+
+    const canvases = {
+      photo: document.getElementById('talent-photo'),
+      video: document.getElementById('talent-video'),
+      art:   document.getElementById('talent-art'),
+      lead:  document.getElementById('talent-lead'),
+      dj:    document.getElementById('talent-dj'),
+    };
+
+    const ctxMap = {};
+    Object.entries(canvases).forEach(([key, el]) => {
+      if (el) ctxMap[key] = el.getContext('2d');
+    });
+
+    function loop() {
+      t++;
+      if (ctxMap.photo) drawCamera(ctxMap.photo, t);
+      if (ctxMap.video) drawVideo(ctxMap.video, t);
+      if (ctxMap.art)   drawArt(ctxMap.art, t);
+      if (ctxMap.lead)  drawLeadership(ctxMap.lead, t);
+      if (ctxMap.dj)    drawDJ(ctxMap.dj, t);
+      animFrameRef.current = requestAnimationFrame(loop);
+    }
+    animFrameRef.current = requestAnimationFrame(loop);
+    return () => { if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current); };
+  }, [isLoading]);
 
   if (isLoading) {
     return (
@@ -60,7 +206,6 @@ const ApplePortfolio = () => {
     );
   }
 
-  // ─── WORK EXPERIENCE DATA ───────────────────────────────────────────────────
   const workExperience = [
     {
       id: 1,
@@ -68,9 +213,7 @@ const ApplePortfolio = () => {
       company: 'Sogeti / Capgemini',
       client: 'General Electric (GE)',
       period: 'Sep 2024 – Present',
-      duration: '9 months',
       location: 'Remote / On-site',
-      color: 'from-blue-600 to-cyan-600',
       icon: '◈',
       summary: 'Built and maintained large-scale Oracle-based ETL pipelines and Teamcenter PLM migration frameworks for GE engineering data, processing millions of enterprise records across electrical, mechanical, and chemical domains.',
       highlights: [
@@ -91,244 +234,91 @@ const ApplePortfolio = () => {
         'Debugged Oracle SQL errors, JSON schema issues, data mismatches, and batch automation failures',
         'Collaborated with migration, engineering, and data teams in an Agile/Sprint-based environment'
       ],
-      technologies: [
-        'Oracle 19c', 'SQL / SQL*Plus', 'Windows Batch Scripting',
-        'Teamcenter PLM', 'Pentaho Data Integration (PDI)',
-        'Power BI', 'Python', 'Git'
-      ]
+      technologies: ['Oracle 19c', 'SQL / SQL*Plus', 'Windows Batch Scripting', 'Teamcenter PLM', 'Pentaho Data Integration (PDI)', 'Power BI', 'Python', 'Git']
     }
   ];
 
-  // ─── PROJECTS DATA ──────────────────────────────────────────────────────────
   const projects = [
     {
-      id: 1,
-      title: 'Cryptocurrency Price Analysis with AI',
-      subtitle: 'Advanced Financial Machine Learning Research',
-      icon: '◆',
-      color: 'from-yellow-600 to-orange-600',
+      id: 1, title: 'Cryptocurrency Price Analysis with AI', subtitle: 'Advanced Financial Machine Learning Research', icon: '◆', color: 'from-yellow-600 to-orange-600',
       overview: 'Published breakthrough research comparing deep learning architectures for cryptocurrency market prediction, demonstrating strong analytical and research capabilities.',
       impact: { accuracy: '55%', volume: '$50M+', citations: '12+', innovation: 'Industry First' },
       details: {
         problem: 'Cryptocurrency markets lost $2 trillion in value due to unpredictable volatility, creating massive investment risks and market instability.',
         solution: 'Pioneered comparative analysis of Artificial Neural Networks (ANN) vs Long Short-Term Memory (LSTM) architectures, discovering optimal prediction strategies for different market conditions.',
         technologies: ['Deep Learning', 'TensorFlow', 'Advanced LSTM', 'Neural Architecture Search', 'Time Series Forecasting', 'Financial Engineering', 'Quantitative Analysis'],
-        outcomes: [
-          'Achieved 55% prediction accuracy outperforming traditional models by 23%',
-          'Published first empirical proof of cryptocurrency predictability patterns',
-          'Discovered LSTM excels in volatile markets while ANN dominates stable periods',
-          'Research cited 12+ times, influencing fintech AI development strategies'
-        ]
+        outcomes: ['Achieved 55% prediction accuracy outperforming traditional models by 23%', 'Published first empirical proof of cryptocurrency predictability patterns', 'Discovered LSTM excels in volatile markets while ANN dominates stable periods', 'Research cited 12+ times, influencing fintech AI development strategies']
       }
     },
     {
-      id: 2,
-      title: 'Android Development Portfolio - 18+ Mobile Applications',
-      subtitle: 'Comprehensive Mobile App Development Suite',
-      icon: '◎',
-      color: 'from-green-600 to-teal-600',
+      id: 2, title: 'Android Development Portfolio - 18+ Mobile Applications', subtitle: 'Comprehensive Mobile App Development Suite', icon: '◎', color: 'from-green-600 to-teal-600',
       overview: 'Developed comprehensive portfolio of 18+ Android applications spanning multiple domains including e-commerce, food delivery, travel, productivity, and social platforms.',
       impact: { apps: '18+', domains: '8', features: '50+', completion: '100%' },
       details: {
         problem: 'Mobile app market requires diverse skill sets across different domains and understanding of core Android development principles for various use cases.',
         solution: 'Built comprehensive suite of Android applications covering major app categories including e-commerce, food ordering, messaging, travel, productivity, and utility apps with full functionality.',
         technologies: ['Android Studio', 'Java', 'Kotlin', 'SQLite Database', 'Firebase', 'Material Design', 'API Integration', 'Push Notifications', 'File Storage'],
-        outcomes: [
-          'Developed 18+ fully functional Android applications across 8+ domains',
-          'Implemented core features: authentication, database integration, notifications',
-          'Built e-commerce app with shopping cart and payment integration',
-          'Created social features including messaging and user management systems'
-        ]
+        outcomes: ['Developed 18+ fully functional Android applications across 8+ domains', 'Implemented core features: authentication, database integration, notifications', 'Built e-commerce app with shopping cart and payment integration', 'Created social features including messaging and user management systems']
       }
     },
     {
-      id: 3,
-      title: 'Enterprise Air Quality Intelligence Platform',
-      subtitle: 'Environmental AI & Policy Analytics',
-      icon: '●',
-      color: 'from-green-600 to-blue-600',
+      id: 3, title: 'Enterprise Air Quality Intelligence Platform', subtitle: 'Environmental AI & Policy Analytics', icon: '●', color: 'from-green-600 to-blue-600',
       overview: 'Built AI-powered environmental monitoring system enabling government policy decisions affecting 100M+ citizens across 26 major cities.',
       impact: { accuracy: '92%', population: '100M+', savings: '$45M', policies: '8 Implemented' },
       details: {
         problem: 'Air pollution causes 1.67M deaths annually in India, with governments lacking predictive tools for proactive policy intervention.',
         solution: 'Developed enterprise-grade SARIMAX forecasting engine processing multi-dimensional environmental data to enable predictive policy-making and resource allocation.',
         technologies: ['Advanced SARIMAX', 'Multi-variate Time Series', 'Big Data Analytics', 'Government APIs', 'Policy Simulation', 'Environmental Modeling', 'Predictive Analytics'],
-        outcomes: [
-          'Achieved 92% forecasting accuracy with RMSE of 2.49 across 8 pollutants',
-          'Enabled $45M in optimized policy spending through predictive resource allocation',
-          'Identified 56.2% pollution reduction potential through targeted interventions',
-          'Deployed across 26 cities impacting 100M+ citizens with real-time insights'
-        ]
+        outcomes: ['Achieved 92% forecasting accuracy with RMSE of 2.49 across 8 pollutants', 'Enabled $45M in optimized policy spending through predictive resource allocation', 'Identified 56.2% pollution reduction potential through targeted interventions', 'Deployed across 26 cities impacting 100M+ citizens with real-time insights']
       }
     },
     {
-      id: 4,
-      title: 'Pixel - Full-Stack E-commerce Platform',
-      subtitle: 'Modern Shopping Experience with Advanced UI/UX',
-      icon: '▣',
-      color: 'from-blue-600 to-purple-600',
+      id: 4, title: 'Pixel - Full-Stack E-commerce Platform', subtitle: 'Modern Shopping Experience with Advanced UI/UX', icon: '▣', color: 'from-blue-600 to-purple-600',
       overview: 'Developed comprehensive e-commerce platform with responsive design, advanced product management, and seamless shopping experience across all devices.',
       impact: { pages: '15+', responsive: '100%', features: '25+', performance: 'Optimized' },
       details: {
         problem: 'Traditional e-commerce sites lack modern UI/UX design and comprehensive shopping features, leading to poor user experience and low conversion rates.',
         solution: 'Built full-featured e-commerce platform with modern responsive design, advanced product filtering, shopping cart management, and complete user authentication system.',
         technologies: ['HTML5', 'CSS3', 'Bootstrap 4', 'JavaScript', 'jQuery', 'Owl Carousel', 'FontAwesome', 'Responsive Design'],
-        outcomes: [
-          'Created 15+ interconnected pages with seamless navigation',
-          'Implemented advanced product carousel and filtering systems',
-          'Built complete shopping cart with dynamic item management',
-          'Developed responsive design working across all device sizes'
-        ]
+        outcomes: ['Created 15+ interconnected pages with seamless navigation', 'Implemented advanced product carousel and filtering systems', 'Built complete shopping cart with dynamic item management', 'Developed responsive design working across all device sizes']
       }
     },
     {
-      id: 5,
-      title: 'Real-Time Enterprise Data Intelligence Pipeline',
-      subtitle: 'Cloud-Native Analytics Architecture',
-      icon: '▲',
-      color: 'from-purple-600 to-pink-600',
+      id: 5, title: 'Real-Time Enterprise Data Intelligence Pipeline', subtitle: 'Cloud-Native Analytics Architecture', icon: '▲', color: 'from-purple-600 to-pink-600',
       overview: 'Architected scalable data infrastructure processing 500GB+ daily, delivering real-time business intelligence for Fortune 500 decision-making.',
       impact: { throughput: '500GB/day', latency: '<2min', savings: '$1.2M', decisions: '1000+/day' },
       details: {
         problem: 'Enterprise clients losing $50M annually due to fragmented data sources preventing real-time competitive analysis and strategic decision-making.',
         solution: 'Engineered cloud-native Medallion Architecture using Databricks and Neo4j, integrating 15+ data streams for real-time competitive intelligence and automated decision support.',
         technologies: ['Databricks', 'Neo4j Graph DB', 'Apache Spark', 'Real-time Streaming', 'AWS Infrastructure', 'Docker Orchestration', 'Advanced ETL'],
-        outcomes: [
-          'Reduced data processing latency by 75% (from 8 hours to <2 minutes)',
-          'Generated $1.2M annual savings through automated competitive insights',
-          'Integrated weather, social media, and market data for 360° business intelligence',
-          'Enabled 1000+ daily strategic decisions through real-time dashboards'
-        ]
+        outcomes: ['Reduced data processing latency by 75% (from 8 hours to <2 minutes)', 'Generated $1.2M annual savings through automated competitive insights', 'Integrated weather, social media, and market data for 360° business intelligence', 'Enabled 1000+ daily strategic decisions through real-time dashboards']
       }
     },
     {
-      id: 6,
-      title: 'AI-Powered Commerce Optimization Engine',
-      subtitle: 'ML-Driven Customer Intelligence Platform',
-      icon: '◈',
-      color: 'from-orange-600 to-red-600',
+      id: 6, title: 'AI-Powered Commerce Optimization Engine', subtitle: 'ML-Driven Customer Intelligence Platform', icon: '◈', color: 'from-orange-600 to-red-600',
       overview: 'Developed intelligent e-commerce platform with advanced recommendation algorithms, driving 8-figure revenue growth for enterprise clients.',
       impact: { revenue: '+$12M', conversion: '+47%', users: '250K+', retention: '+85%' },
       details: {
         problem: 'E-commerce platforms experiencing 65% cart abandonment rates and poor personalization, losing $18B annually in potential revenue.',
         solution: 'Built advanced collaborative filtering engine with deep learning personalization, integrated with secure payment infrastructure and behavioral analytics.',
         technologies: ['Advanced ML Algorithms', 'Collaborative Filtering', 'Deep Learning', 'Behavioral Analytics', 'Secure Payment Systems', 'Mobile Architecture', 'A/B Testing'],
-        outcomes: [
-          'Increased conversion rates by 47% generating $12M additional revenue',
-          'Improved customer retention by 85% through personalized experiences',
-          'Deployed secure 256-bit encrypted payment system processing $50M+ transactions',
-          'Scaled to 250K+ active users with 99.9% uptime reliability'
-        ]
+        outcomes: ['Increased conversion rates by 47% generating $12M additional revenue', 'Improved customer retention by 85% through personalized experiences', 'Deployed secure 256-bit encrypted payment system processing $50M+ transactions', 'Scaled to 250K+ active users with 99.9% uptime reliability']
       }
     }
   ];
 
-  // ─── SKILLS DATA ────────────────────────────────────────────────────────────
   const skillCategories = [
-    {
-      id: 'programming',
-      name: 'Programming & Development',
-      icon: '▣',
-      skills: [
-        { name: 'Python (Advanced)', level: 95, projects: 'ML systems & analysis' },
-        { name: 'Java/Kotlin', level: 92, projects: '18+ Android applications' },
-        { name: 'HTML5/CSS3', level: 90, projects: 'E-commerce platform' },
-        { name: 'JavaScript/jQuery', level: 88, projects: 'Interactive web apps' },
-        { name: 'SQL (Proficient)', level: 90, projects: 'Database integration' }
-      ]
-    },
-    {
-      id: 'ml-ai',
-      name: 'Machine Learning & AI',
-      icon: '◇',
-      skills: [
-        { name: 'Deep Learning', level: 88, projects: 'Neural network models' },
-        { name: 'TensorFlow/Keras', level: 85, projects: 'ML model development' },
-        { name: 'Data Analysis', level: 92, projects: 'Statistical modeling' },
-        { name: 'LSTM/RNN', level: 85, projects: 'Time series forecasting' },
-        { name: 'Model Deployment', level: 80, projects: 'Production systems' }
-      ]
-    },
-    {
-      id: 'data-engineering',
-      name: 'Data Engineering & ETL',
-      icon: '◉',
-      skills: [
-        { name: 'Oracle SQL / SQL*Plus', level: 90, projects: 'GE enterprise pipelines' },
-        { name: 'ETL Pipeline Design', level: 88, projects: 'Large-scale migration' },
-        { name: 'Teamcenter PLM', level: 85, projects: 'Parts & classification migration' },
-        { name: 'Pentaho PDI', level: 82, projects: 'Data integration workflows' },
-        { name: 'Batch Scripting (BAT)', level: 87, projects: 'Automation frameworks' }
-      ]
-    },
-    {
-      id: 'mobile',
-      name: 'Mobile Development',
-      icon: '○',
-      skills: [
-        { name: 'Android Studio', level: 95, projects: '18+ mobile applications' },
-        { name: 'Mobile UI/UX', level: 90, projects: 'Cross-platform design' },
-        { name: 'SQLite Database', level: 88, projects: 'Local data storage' },
-        { name: 'Firebase Integration', level: 85, projects: 'Real-time features' },
-        { name: 'API Integration', level: 87, projects: 'Backend connectivity' }
-      ]
-    },
-    {
-      id: 'web-cloud',
-      name: 'Web & Cloud Development',
-      icon: '▢',
-      skills: [
-        { name: 'Bootstrap Framework', level: 90, projects: 'Responsive design' },
-        { name: 'AWS Cloud Services', level: 85, projects: 'Cloud infrastructure' },
-        { name: 'Databricks', level: 88, projects: 'Big data processing' },
-        { name: 'Docker', level: 82, projects: 'Containerization' },
-        { name: 'Apache Spark', level: 85, projects: 'Distributed computing' }
-      ]
-    },
-    {
-      id: 'research',
-      name: 'Research & Analytics',
-      icon: '◆',
-      skills: [
-        { name: 'Financial Modeling', level: 85, projects: 'Market analysis' },
-        { name: 'Research Methods', level: 90, projects: 'Academic publication' },
-        { name: 'Time Series Analysis', level: 87, projects: 'Forecasting models' },
-        { name: 'Statistical Methods', level: 88, projects: 'Advanced analytics' },
-        { name: 'Data Visualization', level: 87, projects: 'Interactive dashboards' }
-      ]
-    }
+    { id: 'programming', name: 'Programming & Development', icon: '▣', skills: [{ name: 'Python (Advanced)', level: 95, projects: 'ML systems & analysis' }, { name: 'Java/Kotlin', level: 92, projects: '18+ Android applications' }, { name: 'HTML5/CSS3', level: 90, projects: 'E-commerce platform' }, { name: 'JavaScript/jQuery', level: 88, projects: 'Interactive web apps' }, { name: 'SQL (Proficient)', level: 90, projects: 'Database integration' }] },
+    { id: 'ml-ai', name: 'Machine Learning & AI', icon: '◇', skills: [{ name: 'Deep Learning', level: 88, projects: 'Neural network models' }, { name: 'TensorFlow/Keras', level: 85, projects: 'ML model development' }, { name: 'Data Analysis', level: 92, projects: 'Statistical modeling' }, { name: 'LSTM/RNN', level: 85, projects: 'Time series forecasting' }, { name: 'Model Deployment', level: 80, projects: 'Production systems' }] },
+    { id: 'data-engineering', name: 'Data Engineering & ETL', icon: '◉', skills: [{ name: 'Oracle SQL / SQL*Plus', level: 90, projects: 'GE enterprise pipelines' }, { name: 'ETL Pipeline Design', level: 88, projects: 'Large-scale migration' }, { name: 'Teamcenter PLM', level: 85, projects: 'Parts & classification migration' }, { name: 'Pentaho PDI', level: 82, projects: 'Data integration workflows' }, { name: 'Batch Scripting (BAT)', level: 87, projects: 'Automation frameworks' }] },
+    { id: 'mobile', name: 'Mobile Development', icon: '○', skills: [{ name: 'Android Studio', level: 95, projects: '18+ mobile applications' }, { name: 'Mobile UI/UX', level: 90, projects: 'Cross-platform design' }, { name: 'SQLite Database', level: 88, projects: 'Local data storage' }, { name: 'Firebase Integration', level: 85, projects: 'Real-time features' }, { name: 'API Integration', level: 87, projects: 'Backend connectivity' }] },
+    { id: 'web-cloud', name: 'Web & Cloud Development', icon: '▢', skills: [{ name: 'Bootstrap Framework', level: 90, projects: 'Responsive design' }, { name: 'AWS Cloud Services', level: 85, projects: 'Cloud infrastructure' }, { name: 'Databricks', level: 88, projects: 'Big data processing' }, { name: 'Docker', level: 82, projects: 'Containerization' }, { name: 'Apache Spark', level: 85, projects: 'Distributed computing' }] },
+    { id: 'research', name: 'Research & Analytics', icon: '◆', skills: [{ name: 'Financial Modeling', level: 85, projects: 'Market analysis' }, { name: 'Research Methods', level: 90, projects: 'Academic publication' }, { name: 'Time Series Analysis', level: 87, projects: 'Forecasting models' }, { name: 'Statistical Methods', level: 88, projects: 'Advanced analytics' }, { name: 'Data Visualization', level: 87, projects: 'Interactive dashboards' }] }
   ];
 
-  // ─── EDUCATION DATA ─────────────────────────────────────────────────────────
   const education = [
-    {
-      degree: 'Master of Professional Studies',
-      field: 'Analytics (Data Science Concentration)',
-      school: 'Northeastern University',
-      location: 'Boston, MA',
-      period: '2024 - 2025',
-      gpa: '3.68/4.0 (Top 15%)',
-      highlights: [
-        'Advanced Machine Learning & AI',
-        'Big Data Analytics & Cloud Computing',
-        'Statistical Methods & Quantitative Analysis',
-        'Business Intelligence & Data Visualization'
-      ]
-    },
-    {
-      degree: 'Bachelor of Technology',
-      field: 'Computer Science & Engineering',
-      school: 'CVR College of Engineering',
-      location: 'Hyderabad, India',
-      period: '2018 - 2022',
-      gpa: '6.9/10 (Distinction)',
-      highlights: [
-        'Vice Chairperson, Computer Science Department',
-        'Developed 18+ Android applications across multiple domains',
-        'Published breakthrough cryptocurrency AI research',
-        'Led CIENCIA 2k22 tech fest (2000+ participants)'
-      ]
-    }
+    { degree: 'Master of Professional Studies', field: 'Analytics (Data Science Concentration)', school: 'Northeastern University', location: 'Boston, MA', period: '2024 - 2025', gpa: '3.68/4.0 (Top 15%)', highlights: ['Advanced Machine Learning & AI', 'Big Data Analytics & Cloud Computing', 'Statistical Methods & Quantitative Analysis', 'Business Intelligence & Data Visualization'] },
+    { degree: 'Bachelor of Technology', field: 'Computer Science & Engineering', school: 'CVR College of Engineering', location: 'Hyderabad, India', period: '2018 - 2022', gpa: '6.9/10 (Distinction)', highlights: ['Vice Chairperson, Computer Science Department', 'Developed 18+ Android applications across multiple domains', 'Published breakthrough cryptocurrency AI research', 'Led CIENCIA 2k22 tech fest (2000+ participants)'] }
   ];
 
   const certifications = [
@@ -347,10 +337,8 @@ const ApplePortfolio = () => {
   return (
     <div className="bg-black text-white selection:bg-white selection:text-black overflow-x-hidden">
 
-      {/* ── Navigation ─────────────────────────────────────────────────────── */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-1000 ${
-        scrollY > 100 ? 'bg-black/80 backdrop-blur-3xl backdrop-saturate-200' : ''
-      }`}>
+      {/* Navigation */}
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-1000 ${scrollY > 100 ? 'bg-black/80 backdrop-blur-3xl backdrop-saturate-200' : ''}`}>
         <div className="flex items-center justify-between px-4 sm:px-8 lg:px-12 py-4 sm:py-6 lg:py-8">
           <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight">VSS Krishna Chaitanya</div>
           <div className="hidden lg:flex items-center gap-8 xl:gap-12 text-sm md:text-base lg:text-lg">
@@ -360,84 +348,33 @@ const ApplePortfolio = () => {
             <button onClick={() => scrollToSection('education')} className="opacity-80 hover:opacity-100 transition-opacity">Education</button>
             <button onClick={() => scrollToSection('contact')} className="opacity-80 hover:opacity-100 transition-opacity">Contact</button>
           </div>
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 hover:bg-white/10 rounded-lg transition-colors"
-            aria-label="Toggle menu"
-          >
+          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="lg:hidden p-2 hover:bg-white/10 rounded-lg transition-colors" aria-label="Toggle menu">
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
-
-        <div className={`lg:hidden fixed inset-0 bg-black/95 backdrop-blur-xl transition-all duration-500 ${
-          mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
-        }`} style={{ top: '60px' }}>
+        <div className={`lg:hidden fixed inset-0 bg-black/95 backdrop-blur-xl transition-all duration-500 ${mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`} style={{ top: '60px' }}>
           <div className="flex flex-col items-center justify-center h-full space-y-8 p-8">
             {['Experience', 'Projects', 'Skills', 'Education', 'Contact'].map((item, index) => (
-              <button
-                key={item}
-                onClick={() => scrollToSection(item.toLowerCase())}
-                className="text-3xl md:text-4xl font-light transition-all duration-300 hover:text-blue-400"
-                style={{
-                  transform: mobileMenuOpen ? 'translateY(0)' : 'translateY(30px)',
-                  opacity: mobileMenuOpen ? 1 : 0,
-                  transitionDelay: `${index * 100}ms`
-                }}
-              >
-                {item}
-              </button>
+              <button key={item} onClick={() => scrollToSection(item.toLowerCase())} className="text-3xl md:text-4xl font-light transition-all duration-300 hover:text-blue-400" style={{ transform: mobileMenuOpen ? 'translateY(0)' : 'translateY(30px)', opacity: mobileMenuOpen ? 1 : 0, transitionDelay: `${index * 100}ms` }}>{item}</button>
             ))}
           </div>
         </div>
       </nav>
 
-      {/* ── Hero Section ───────────────────────────────────────────────────── */}
+      {/* Hero */}
       <section ref={heroRef} className="relative min-h-screen lg:min-h-[120vh] flex items-center justify-center overflow-hidden">
-        <div
-          className="absolute w-[600px] md:w-[800px] lg:w-[1200px] h-[600px] md:h-[800px] lg:h-[1200px] rounded-full opacity-30"
-          style={{
-            background: 'radial-gradient(circle, rgba(147, 51, 234, 0.3) 0%, transparent 70%)',
-            filter: 'blur(100px)',
-            transform: `translate(${mousePosition.x * 50}px, ${mousePosition.y * 50}px)`
-          }}
-        />
+        <div className="absolute w-[600px] md:w-[800px] lg:w-[1200px] h-[600px] md:h-[800px] lg:h-[1200px] rounded-full opacity-30" style={{ background: 'radial-gradient(circle, rgba(147, 51, 234, 0.3) 0%, transparent 70%)', filter: 'blur(100px)', transform: `translate(${mousePosition.x * 50}px, ${mousePosition.y * 50}px)` }} />
         <div className="relative z-10 text-center px-4 sm:px-6 max-w-[100vw] mx-auto">
-          <div className="mb-8 md:mb-12 lg:mb-16 text-xs sm:text-sm md:text-base lg:text-lg tracking-[0.3em] md:tracking-[0.4em] text-gray-500 uppercase">
-            Analytics • Data Science • Machine Learning • Data Engineering
-          </div>
-          <h1
-            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl 2xl:text-[12rem] font-black leading-[0.8] lg:leading-[0.75] tracking-[-0.02em] md:tracking-[-0.05em] mb-8 md:mb-12 lg:mb-16"
-            style={{
-              transform: `translateY(${scrollY * 0.5}px) scale(${1 - scrollY * 0.0005})`,
-              filter: `blur(${Math.min(scrollY * 0.015, 6)}px)`,
-              opacity: Math.max(1 - scrollY * 0.002, 0.4)
-            }}
-          >
+          <div className="mb-8 md:mb-12 lg:mb-16 text-xs sm:text-sm md:text-base lg:text-lg tracking-[0.3em] md:tracking-[0.4em] text-gray-500 uppercase">Analytics • Data Science • Machine Learning • Data Engineering</div>
+          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl 2xl:text-[12rem] font-black leading-[0.8] lg:leading-[0.75] tracking-[-0.02em] md:tracking-[-0.05em] mb-8 md:mb-12 lg:mb-16" style={{ transform: `translateY(${scrollY * 0.5}px) scale(${1 - scrollY * 0.0005})`, filter: `blur(${Math.min(scrollY * 0.015, 6)}px)`, opacity: Math.max(1 - scrollY * 0.002, 0.4) }}>
             <span className="block">VSS Krishna</span>
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500">
-              Chaitanya Annamraju
-            </span>
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500">Chaitanya Annamraju</span>
           </h1>
-          <p
-            className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl text-gray-400 max-w-5xl mx-auto font-light mb-8 md:mb-12 lg:mb-16"
-            style={{
-              transform: `translateY(${scrollY * 0.3}px)`,
-              opacity: 1 - scrollY * 0.002
-            }}
-          >
-            Data Scientist · Data Engineer · Software Developer
-          </p>
+          <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl text-gray-400 max-w-5xl mx-auto font-light mb-8 md:mb-12 lg:mb-16" style={{ transform: `translateY(${scrollY * 0.3}px)`, opacity: 1 - scrollY * 0.002 }}>Data Scientist · Data Engineer · Software Developer</p>
           <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4 sm:gap-6 text-sm sm:text-base md:text-lg">
-            <a href="mailto:annamraju.v@northeastern.edu" className="flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-white/10 backdrop-blur rounded-full hover:bg-white/20 transition-all">
-              <span className="truncate">annamraju.v@northeastern.edu</span>
-            </a>
-            <a href="tel:+18574927729" className="flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-white/10 backdrop-blur rounded-full hover:bg-white/20 transition-all">
-              <span>+1 (857) 492-7729</span>
-            </a>
-            <a href="https://bit.ly/47cIIXB" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-white/10 backdrop-blur rounded-full hover:bg-white/20 transition-all">
-              <span>LinkedIn</span>
-              <ArrowUpRight size={18} className="sm:w-5 sm:h-5" />
-            </a>
+            <a href="mailto:annamraju.v@northeastern.edu" className="flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-white/10 backdrop-blur rounded-full hover:bg-white/20 transition-all"><span className="truncate">annamraju.v@northeastern.edu</span></a>
+            <a href="tel:+18574927729" className="flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-white/10 backdrop-blur rounded-full hover:bg-white/20 transition-all"><span>+1 (857) 492-7729</span></a>
+            <a href="https://bit.ly/47cIIXB" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-white/10 backdrop-blur rounded-full hover:bg-white/20 transition-all"><span>LinkedIn</span><ArrowUpRight size={18} /></a>
           </div>
         </div>
         <div className="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2" style={{ opacity: 1 - scrollY * 0.01 }}>
@@ -447,21 +384,11 @@ const ApplePortfolio = () => {
         </div>
       </section>
 
-      {/* ── Introduction with Impact Metrics ───────────────────────────────── */}
+      {/* Intro Metrics */}
       <section ref={introRef} className="py-20 sm:py-32 lg:py-40 px-4 sm:px-8 lg:px-12">
         <div className="max-w-6xl mx-auto">
-          <h2
-            className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl font-medium leading-tight mb-12 sm:mb-16 lg:mb-20"
-            style={{
-              transform: `translateY(${Math.max(0, 100 - scrollY * 0.1)}px)`,
-              opacity: Math.min(1, scrollY * 0.002)
-            }}
-          >
-            Transforming complex data into
-            <span className="text-gray-500"> actionable business insights</span>
-            <br />
-            through<span className="text-gray-500"> AI-powered solutions</span> and
-            <span className="text-gray-500"> full-stack development</span>.
+          <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl font-medium leading-tight mb-12 sm:mb-16 lg:mb-20" style={{ transform: `translateY(${Math.max(0, 100 - scrollY * 0.1)}px)`, opacity: Math.min(1, scrollY * 0.002) }}>
+            Transforming complex data into<span className="text-gray-500"> actionable business insights</span><br />through<span className="text-gray-500"> AI-powered solutions</span> and<span className="text-gray-500"> full-stack development</span>.
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 mt-16 sm:mt-24 lg:mt-32">
             {[
@@ -470,15 +397,7 @@ const ApplePortfolio = () => {
               { icon: '▲', metric: '18+', label: 'Mobile Apps', sublabel: 'Android development portfolio', isNumeric: true },
               { icon: '●', metric: 'Published Research', label: 'AI Paper', sublabel: 'Cryptocurrency price prediction', isNumeric: false }
             ].map((stat, index) => (
-              <div
-                key={index}
-                className="bg-gray-900/50 backdrop-blur rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-center hover:bg-gray-900/70 transition-all"
-                style={{
-                  transform: `translateY(${Math.max(0, 200 - scrollY * 0.15)}px)`,
-                  opacity: Math.min(1, (scrollY - 200) * 0.003),
-                  transitionDelay: `${index * 100}ms`
-                }}
-              >
+              <div key={index} className="bg-gray-900/50 backdrop-blur rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-center hover:bg-gray-900/70 transition-all" style={{ transform: `translateY(${Math.max(0, 200 - scrollY * 0.15)}px)`, opacity: Math.min(1, (scrollY - 200) * 0.003), transitionDelay: `${index * 100}ms` }}>
                 <div className="text-3xl sm:text-4xl lg:text-6xl mb-2 sm:mb-4">{stat.icon}</div>
                 <div className={`font-semibold mb-1 sm:mb-2 ${stat.isNumeric ? 'text-2xl sm:text-3xl lg:text-5xl xl:text-6xl' : 'text-lg sm:text-xl lg:text-2xl'}`}>{stat.metric}</div>
                 <div className="text-gray-400 text-sm sm:text-base lg:text-xl">{stat.label}</div>
@@ -489,20 +408,16 @@ const ApplePortfolio = () => {
         </div>
       </section>
 
-      {/* ── Work Experience Section ─────────────────────────────────────────── */}
+      {/* Work Experience */}
       <section id="experience" className="py-20 sm:py-32 lg:py-40 bg-gray-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12">
           <div className="text-center mb-16 sm:mb-24 lg:mb-32">
             <h2 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-semibold mb-4 sm:mb-6 lg:mb-8">Experience</h2>
             <p className="text-xl sm:text-2xl lg:text-3xl text-gray-500">Enterprise Data Engineering · ETL · PLM Migration</p>
           </div>
-
           {workExperience.map((job) => (
-            <div key={job.id} className="relative">
-              {/* Header Card */}
+            <div key={job.id}>
               <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl lg:rounded-3xl p-6 sm:p-8 lg:p-12 mb-6 sm:mb-8">
-
-                {/* Role & Company */}
                 <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-8 lg:mb-10 gap-6">
                   <div className="flex items-start gap-4 sm:gap-6">
                     <div className="text-5xl sm:text-6xl lg:text-7xl">{job.icon}</div>
@@ -514,18 +429,13 @@ const ApplePortfolio = () => {
                   </div>
                   <div className="lg:text-right shrink-0">
                     <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/20 rounded-full text-blue-400 text-sm sm:text-base mb-2">
-                      <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
-                      Currently Active
+                      <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />Currently Active
                     </div>
                     <p className="text-gray-400 text-base sm:text-lg">{job.period}</p>
                     <p className="text-gray-600 text-sm sm:text-base">{job.location}</p>
                   </div>
                 </div>
-
-                {/* Summary */}
                 <p className="text-base sm:text-lg lg:text-xl text-gray-300 mb-8 lg:mb-10 leading-relaxed">{job.summary}</p>
-
-                {/* Impact Metrics */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-8 lg:mb-10">
                   {job.highlights.map((h, i) => (
                     <div key={i} className="bg-black/50 rounded-lg lg:rounded-xl p-3 sm:p-4 text-center">
@@ -535,27 +445,20 @@ const ApplePortfolio = () => {
                     </div>
                   ))}
                 </div>
-
-                {/* Technologies */}
                 <div className="mb-8 lg:mb-10">
                   <h4 className="text-lg sm:text-xl font-semibold mb-3 text-gray-300">Technologies & Tools</h4>
                   <div className="flex flex-wrap gap-2 sm:gap-3">
                     {job.technologies.map((tech) => (
-                      <span key={tech} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-800 rounded-full text-sm sm:text-base text-gray-300">
-                        {tech}
-                      </span>
+                      <span key={tech} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-800 rounded-full text-sm sm:text-base text-gray-300">{tech}</span>
                     ))}
                   </div>
                 </div>
-
-                {/* Responsibilities */}
                 <div>
                   <h4 className="text-lg sm:text-xl font-semibold mb-4 text-gray-300">Key Responsibilities & Achievements</h4>
                   <ul className="space-y-3">
                     {job.responsibilities.map((item, i) => (
                       <li key={i} className="flex items-start gap-3 text-gray-400 text-sm sm:text-base lg:text-lg">
-                        <span className="text-blue-400 mt-1 shrink-0">•</span>
-                        <span>{item}</span>
+                        <span className="text-blue-400 mt-1 shrink-0">•</span><span>{item}</span>
                       </li>
                     ))}
                   </ul>
@@ -566,7 +469,7 @@ const ApplePortfolio = () => {
         </div>
       </section>
 
-      {/* ── Projects Section ───────────────────────────────────────────────── */}
+      {/* Projects */}
       <section id="projects" ref={projectsRef} className="py-20 sm:py-32 lg:py-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12">
           <div className="text-center mb-16 sm:mb-24 lg:mb-32">
@@ -575,11 +478,8 @@ const ApplePortfolio = () => {
           </div>
           <div className="space-y-16 sm:space-y-24 lg:space-y-32 xl:space-y-40">
             {projects.map((project) => (
-              <div key={project.id} className="relative">
-                <div
-                  className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl lg:rounded-3xl p-6 sm:p-8 lg:p-12 cursor-pointer hover:scale-[1.02] transition-transform duration-500"
-                  onClick={() => setExpandedProject(expandedProject === project.id ? null : project.id)}
-                >
+              <div key={project.id}>
+                <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl lg:rounded-3xl p-6 sm:p-8 lg:p-12 cursor-pointer hover:scale-[1.02] transition-transform duration-500" onClick={() => setExpandedProject(expandedProject === project.id ? null : project.id)}>
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 lg:mb-8">
                     <div className="flex items-start gap-4 sm:gap-6">
                       <div className="text-5xl sm:text-6xl lg:text-8xl">{project.icon}</div>
@@ -591,11 +491,7 @@ const ApplePortfolio = () => {
                     <div className="mt-4 lg:mt-0">
                       <button className="flex items-center gap-2 text-base sm:text-lg lg:text-xl">
                         <span>View details</span>
-                        <ChevronRight
-                          size={20}
-                          className="sm:w-6 sm:h-6 transition-transform duration-300"
-                          style={{ transform: expandedProject === project.id ? 'rotate(90deg)' : 'rotate(0deg)' }}
-                        />
+                        <ChevronRight size={20} className="sm:w-6 sm:h-6 transition-transform duration-300" style={{ transform: expandedProject === project.id ? 'rotate(90deg)' : 'rotate(0deg)' }} />
                       </button>
                     </div>
                   </div>
@@ -621,16 +517,13 @@ const ApplePortfolio = () => {
                       <div>
                         <h4 className="text-2xl sm:text-3xl font-semibold mb-4">Technologies Used</h4>
                         <div className="flex flex-wrap gap-2 sm:gap-3 mb-6 sm:mb-8">
-                          {project.details.technologies.map((tech) => (
-                            <span key={tech} className="px-4 sm:px-5 py-2 sm:py-3 bg-gray-800 rounded-full text-sm sm:text-base">{tech}</span>
-                          ))}
+                          {project.details.technologies.map((tech) => (<span key={tech} className="px-4 sm:px-5 py-2 sm:py-3 bg-gray-800 rounded-full text-sm sm:text-base">{tech}</span>))}
                         </div>
                         <h4 className="text-2xl sm:text-3xl font-semibold mb-4">Key Outcomes</h4>
                         <ul className="space-y-3">
                           {project.details.outcomes.map((outcome, i) => (
                             <li key={i} className="flex items-start gap-3 text-gray-400 text-base sm:text-lg">
-                              <span className="text-green-400 mt-1">•</span>
-                              <span>{outcome}</span>
+                              <span className="text-green-400 mt-1">•</span><span>{outcome}</span>
                             </li>
                           ))}
                         </ul>
@@ -644,21 +537,15 @@ const ApplePortfolio = () => {
         </div>
       </section>
 
-      {/* ── Skills Section ─────────────────────────────────────────────────── */}
+      {/* Skills */}
       <section id="skills" ref={skillsRef} className="py-20 sm:py-32 lg:py-40 px-4 sm:px-8 lg:px-12 bg-gray-950">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-semibold text-center mb-12 sm:mb-16 lg:mb-20">
-            Technical Expertise
-          </h2>
+          <h2 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-semibold text-center mb-12 sm:mb-16 lg:mb-20">Technical Expertise</h2>
           <div className="grid md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
             {skillCategories.map((category) => {
               const isExpanded = expandedSkill === category.id;
               return (
-                <div
-                  key={category.id}
-                  className="bg-gray-900/50 backdrop-blur rounded-2xl lg:rounded-3xl p-6 sm:p-8 hover:bg-gray-900/70 transition-all cursor-pointer"
-                  onClick={() => setExpandedSkill(isExpanded ? null : category.id)}
-                >
+                <div key={category.id} className="bg-gray-900/50 backdrop-blur rounded-2xl lg:rounded-3xl p-6 sm:p-8 hover:bg-gray-900/70 transition-all cursor-pointer" onClick={() => setExpandedSkill(isExpanded ? null : category.id)}>
                   <div className="flex items-center justify-between mb-4 sm:mb-6">
                     <div className="flex items-center gap-3 sm:gap-4">
                       <span className="text-4xl sm:text-5xl">{category.icon}</span>
@@ -672,10 +559,7 @@ const ApplePortfolio = () => {
                     <div className="space-y-4 animate-fadeIn">
                       {category.skills.map((skill) => (
                         <div key={skill.name}>
-                          <div className="flex justify-between mb-2">
-                            <span className="font-medium text-base sm:text-lg">{skill.name}</span>
-                            <span className="text-gray-500 text-base sm:text-lg">{skill.level}%</span>
-                          </div>
+                          <div className="flex justify-between mb-2"><span className="font-medium text-base sm:text-lg">{skill.name}</span><span className="text-gray-500 text-base sm:text-lg">{skill.level}%</span></div>
                           <div className="bg-gray-800 rounded-full h-2 sm:h-3 overflow-hidden">
                             <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-full transition-all duration-1000" style={{ width: `${skill.level}%` }} />
                           </div>
@@ -685,9 +569,7 @@ const ApplePortfolio = () => {
                     </div>
                   ) : (
                     <div className="flex flex-wrap gap-2">
-                      {category.skills.map((skill) => (
-                        <span key={skill.name} className="px-3 sm:px-4 py-1 sm:py-2 bg-gray-800 rounded-full text-sm sm:text-base">{skill.name}</span>
-                      ))}
+                      {category.skills.map((skill) => (<span key={skill.name} className="px-3 sm:px-4 py-1 sm:py-2 bg-gray-800 rounded-full text-sm sm:text-base">{skill.name}</span>))}
                     </div>
                   )}
                 </div>
@@ -697,12 +579,10 @@ const ApplePortfolio = () => {
         </div>
       </section>
 
-      {/* ── Education & Certifications ─────────────────────────────────────── */}
+      {/* Education */}
       <section id="education" ref={educationRef} className="py-20 sm:py-32 lg:py-40">
         <div className="max-w-6xl mx-auto px-4 sm:px-8 lg:px-12">
-          <h2 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-semibold text-center mb-12 sm:mb-16 lg:mb-20">
-            Education & Growth
-          </h2>
+          <h2 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-semibold text-center mb-12 sm:mb-16 lg:mb-20">Education & Growth</h2>
           <div className="mb-16 sm:mb-24 lg:mb-32">
             <h3 className="text-2xl sm:text-3xl lg:text-4xl font-medium mb-8 sm:mb-12 text-center">Academic Journey</h3>
             <div className="space-y-6 sm:space-y-8">
@@ -720,15 +600,12 @@ const ApplePortfolio = () => {
                     </div>
                   </div>
                   <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                    {edu.highlights.map((highlight, i) => (
-                      <div key={i} className="bg-black/50 rounded-lg lg:rounded-xl p-3 sm:p-4 text-xs sm:text-sm lg:text-base text-gray-400">{highlight}</div>
-                    ))}
+                    {edu.highlights.map((highlight, i) => (<div key={i} className="bg-black/50 rounded-lg lg:rounded-xl p-3 sm:p-4 text-xs sm:text-sm lg:text-base text-gray-400">{highlight}</div>))}
                   </div>
                 </div>
               ))}
             </div>
           </div>
-
           <div className="mb-16 sm:mb-20 lg:mb-24">
             <h3 className="text-2xl sm:text-3xl lg:text-4xl font-medium mb-8 sm:mb-12 text-center">Research & Publications</h3>
             <div className="bg-gray-900/50 backdrop-blur rounded-2xl lg:rounded-3xl p-6 sm:p-8 lg:p-12">
@@ -739,38 +616,22 @@ const ApplePortfolio = () => {
                   <p className="text-lg sm:text-xl lg:text-2xl text-gray-400 mb-4">Breakthrough Research Publication • Industry Impact</p>
                   <p className="text-base sm:text-lg text-gray-500 mb-4">CVR College of Engineering, Hyderabad • 2022 • Cited 12+ times</p>
                   <div className="grid md:grid-cols-3 gap-4 sm:gap-6 mb-6">
-                    <div className="bg-black/50 rounded-lg p-3 sm:p-4 text-center">
-                      <div className="text-xl sm:text-2xl font-semibold text-blue-400">Industry First</div>
-                      <div className="text-sm text-gray-500">AI Predictability Proof</div>
-                    </div>
-                    <div className="bg-black/50 rounded-lg p-3 sm:p-4 text-center">
-                      <div className="text-xl sm:text-2xl font-semibold text-blue-400">$50M+</div>
-                      <div className="text-sm text-gray-500">Market Volume Analyzed</div>
-                    </div>
-                    <div className="bg-black/50 rounded-lg p-3 sm:p-4 text-center">
-                      <div className="text-xl sm:text-2xl font-semibold text-blue-400">12+</div>
-                      <div className="text-sm text-gray-500">Academic Citations</div>
-                    </div>
+                    <div className="bg-black/50 rounded-lg p-3 sm:p-4 text-center"><div className="text-xl sm:text-2xl font-semibold text-blue-400">Industry First</div><div className="text-sm text-gray-500">AI Predictability Proof</div></div>
+                    <div className="bg-black/50 rounded-lg p-3 sm:p-4 text-center"><div className="text-xl sm:text-2xl font-semibold text-blue-400">$50M+</div><div className="text-sm text-gray-500">Market Volume Analyzed</div></div>
+                    <div className="bg-black/50 rounded-lg p-3 sm:p-4 text-center"><div className="text-xl sm:text-2xl font-semibold text-blue-400">12+</div><div className="text-sm text-gray-500">Academic Citations</div></div>
                   </div>
-                  <p className="text-gray-400 text-base sm:text-lg">
-                    Pioneered comparative analysis of deep learning architectures for financial prediction. First empirical study proving cryptocurrency market predictability,
-                    influencing fintech AI development strategies across the industry. Research methodology adopted by 8+ financial institutions.
-                  </p>
+                  <p className="text-gray-400 text-base sm:text-lg">Pioneered comparative analysis of deep learning architectures for financial prediction. First empirical study proving cryptocurrency market predictability, influencing fintech AI development strategies across the industry. Research methodology adopted by 8+ financial institutions.</p>
                 </div>
               </div>
             </div>
           </div>
-
           <div>
             <h3 className="text-2xl sm:text-3xl lg:text-4xl font-medium mb-8 sm:mb-12 text-center">Certifications & Leadership</h3>
             <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
               {certifications.map((cert, index) => (
                 <div key={index} className="bg-gray-900/50 backdrop-blur rounded-xl lg:rounded-2xl p-4 sm:p-6 flex items-start gap-3 sm:gap-4 hover:bg-gray-900/70 transition-all">
                   <span className="text-3xl sm:text-4xl lg:text-5xl">{cert.icon}</span>
-                  <div className="flex-1">
-                    <h4 className="text-base sm:text-lg lg:text-xl font-semibold mb-1">{cert.name}</h4>
-                    <p className="text-gray-500 text-sm sm:text-base">{cert.issuer} • {cert.date}</p>
-                  </div>
+                  <div className="flex-1"><h4 className="text-base sm:text-lg lg:text-xl font-semibold mb-1">{cert.name}</h4><p className="text-gray-500 text-sm sm:text-base">{cert.issuer} • {cert.date}</p></div>
                 </div>
               ))}
             </div>
@@ -778,22 +639,23 @@ const ApplePortfolio = () => {
         </div>
       </section>
 
-      {/* ── Additional Creative Talents ────────────────────────────────────── */}
+      {/* Creative Talents */}
       <section className="py-20 sm:py-32 lg:py-40 px-4 sm:px-8 lg:px-12 bg-gray-950">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold text-center mb-12 sm:mb-16 lg:mb-20">
-            Additional Creative Talents
-          </h2>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold text-center mb-12 sm:mb-16 lg:mb-20">Additional Creative Talents</h2>
           <div className="bg-gray-900/30 backdrop-blur rounded-2xl lg:rounded-3xl p-6 sm:p-8 lg:p-12 border border-gray-800">
             <div className="grid md:grid-cols-2 gap-8 sm:gap-10 lg:gap-12">
               {[
-                { icon: '📸', title: 'Professional Photography', desc: 'Multi-genre expertise • Published "The Shutterbug" magazine' },
-                { icon: '🎬', title: 'Video Production', desc: 'Adobe Premiere Pro • Head of Photography & Editing Dept' },
-                { icon: '🎨', title: 'Creative Direction', desc: 'Editorial design • Brand development • Content curation' },
-                { icon: '👥', title: 'Creative Leadership', desc: 'Team management • Project coordination • @Thenikon_user' }
+                { id: 'photo', title: 'Professional Photography', desc: 'Multi-genre expertise • Published "The Shutterbug" magazine' },
+                { id: 'video', title: 'Video Production', desc: 'Adobe Premiere Pro • Head of Photography & Editing Dept' },
+                { id: 'art', title: 'Creative Direction', desc: 'Editorial design • Brand development • Content curation' },
+                { id: 'lead', title: 'Creative Leadership', desc: 'Team management • Project coordination • @Pixel_Roadie' },
+                { id: 'dj', title: 'DJaying', desc: 'Music mixing & curation • Live performance • Audio production' }
               ].map((item, i) => (
-                <div key={i} className="flex items-center gap-4 sm:gap-6">
-                  <span className="text-4xl sm:text-5xl lg:text-6xl">{item.icon}</span>
+                <div key={i} className={`flex items-center gap-4 sm:gap-6 ${i === 4 ? 'md:col-span-2 md:justify-center' : ''}`}>
+                  <div style={{ width: 72, height: 72, borderRadius: 16, background: 'rgba(255,255,255,0.05)', flexShrink: 0, overflow: 'hidden' }}>
+                    <canvas id={`talent-${item.id}`} width="72" height="72" />
+                  </div>
                   <div>
                     <h3 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-2">{item.title}</h3>
                     <p className="text-gray-500 text-base sm:text-lg">{item.desc}</p>
@@ -802,23 +664,17 @@ const ApplePortfolio = () => {
               ))}
             </div>
             <div className="mt-8 sm:mt-10 lg:mt-12 text-center">
-              <p className="text-gray-400 text-base sm:text-lg">
-                Creative skills that complement technical expertise, enabling end-to-end project delivery from development to visual presentation.
-              </p>
+              <p className="text-gray-400 text-base sm:text-lg">Creative skills that complement technical expertise, enabling end-to-end project delivery from development to visual presentation.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Contact Section ────────────────────────────────────────────────── */}
+      {/* Contact */}
       <section id="contact" ref={contactRef} className="min-h-screen flex items-center justify-center px-4 sm:px-8 lg:px-12 py-20">
         <div className="text-center max-w-4xl mx-auto">
-          <h2 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl 2xl:text-[10rem] font-semibold mb-8 sm:mb-12">
-            Let's connect.
-          </h2>
-          <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-gray-400 mb-12 sm:mb-16 font-light">
-            Ready to bring AI expertise, data engineering, and full-stack development skills to your next breakthrough?
-          </p>
+          <h2 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl 2xl:text-[10rem] font-semibold mb-8 sm:mb-12">Let's connect.</h2>
+          <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-gray-400 mb-12 sm:mb-16 font-light">Ready to bring AI expertise, data engineering, and full-stack development skills to your next breakthrough?</p>
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center">
               <a href="mailto:annamraju.v@northeastern.edu" className="group relative px-8 sm:px-12 lg:px-16 py-4 sm:py-6 lg:py-8 bg-white text-black rounded-full text-lg sm:text-xl lg:text-2xl font-medium overflow-hidden hover:scale-105 transition-transform">
@@ -826,15 +682,9 @@ const ApplePortfolio = () => {
               </a>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center">
-              <a href="tel:+18574927729" className="px-6 sm:px-8 lg:px-10 py-3 sm:py-4 lg:py-5 border-2 border-gray-600 rounded-full text-base sm:text-lg lg:text-xl hover:border-white transition-colors">
-                +1 (857) 492-7729
-              </a>
-              <a href="https://bit.ly/47cIIXB" target="_blank" rel="noopener noreferrer" className="px-6 sm:px-8 lg:px-10 py-3 sm:py-4 lg:py-5 border-2 border-gray-600 rounded-full text-base sm:text-lg lg:text-xl hover:border-white transition-colors flex items-center gap-2 justify-center">
-                LinkedIn <ArrowUpRight size={18} className="sm:w-5 sm:h-5" />
-              </a>
-              <a href="/VSS_Krishna_Chaitanya_Resume.pdf" download="VSS_Krishna_Chaitanya_Annamraju_Resume.pdf" className="px-6 sm:px-8 lg:px-10 py-3 sm:py-4 lg:py-5 border-2 border-gray-600 rounded-full text-base sm:text-lg lg:text-xl hover:border-white transition-colors">
-                Download Resume
-              </a>
+              <a href="tel:+18574927729" className="px-6 sm:px-8 lg:px-10 py-3 sm:py-4 lg:py-5 border-2 border-gray-600 rounded-full text-base sm:text-lg lg:text-xl hover:border-white transition-colors">+1 (857) 492-7729</a>
+              <a href="https://bit.ly/47cIIXB" target="_blank" rel="noopener noreferrer" className="px-6 sm:px-8 lg:px-10 py-3 sm:py-4 lg:py-5 border-2 border-gray-600 rounded-full text-base sm:text-lg lg:text-xl hover:border-white transition-colors flex items-center gap-2 justify-center">LinkedIn <ArrowUpRight size={18} /></a>
+              <a href="/VSS_Krishna_Chaitanya_Resume.pdf" download="VSS_Krishna_Chaitanya_Annamraju_Resume.pdf" className="px-6 sm:px-8 lg:px-10 py-3 sm:py-4 lg:py-5 border-2 border-gray-600 rounded-full text-base sm:text-lg lg:text-xl hover:border-white transition-colors">Download Resume</a>
             </div>
           </div>
           <div className="mt-16 sm:mt-24 lg:mt-32 text-gray-600 text-base sm:text-lg">
@@ -844,7 +694,7 @@ const ApplePortfolio = () => {
         </div>
       </section>
 
-      {/* ── Footer ─────────────────────────────────────────────────────────── */}
+      {/* Footer */}
       <footer className="py-8 sm:py-12 px-4 sm:px-8 lg:px-12 border-t border-gray-900">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center text-gray-500 text-sm sm:text-base gap-4">
           <p>© 2025 VSS Krishna Chaitanya Annamraju. All rights reserved.</p>
@@ -853,10 +703,7 @@ const ApplePortfolio = () => {
       </footer>
 
       <style jsx>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
       `}</style>
     </div>
